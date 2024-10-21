@@ -4,9 +4,9 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.ur.thph</groupId>
-	<artifactId>modbus_urcap</artifactId>
-	<version>1.1</version>
-	<name>modbus_urcap</name>
+	<artifactId>modbus_BnT</artifactId>
+	<version>1.8.2</version>
+	<name>modbus_BnT</name>
 	<packaging>bundle</packaging>
 
 	<properties>
@@ -17,16 +17,16 @@
 		<!--********************************************************************-->
 		<!--******************* BEGINNING OF URCAP META DATA *******************-->
 		<urcap.symbolicname>com.ur.thph.modbus_urcap</urcap.symbolicname>
-		<urcap.vendor>Akash Garg</urcap.vendor>
-		<urcap.contactAddress>Pureray Shanghai</urcap.contactAddress>
+		<urcap.vendor>Wilfrid Lan and Zhi-en Tan</urcap.vendor>
+		<urcap.contactAddress> None </urcap.contactAddress>
 		<urcap.copyright>Copyright notice (C)</urcap.copyright>
-		<urcap.description>This is a description of the URCap</urcap.description>
+		<urcap.description>Baud Rate 115200. Connects to ttyTool </urcap.description>
 		<urcap.licenseType>License type</urcap.licenseType>
 		<!--********************** END OF URCAP META DATA **********************-->
 		<!--********************************************************************-->
 
 		<!-- Host, username and password of the robot to be used when running "mvn install -Premote" -->
-		<urcap.install.host>172.30.38.12</urcap.install.host>
+		<urcap.install.host>127.0.0.1</urcap.install.host>
 		<urcap.install.username>root</urcap.install.username>
 		<urcap.install.password>easybot</urcap.install.password>
 
@@ -35,7 +35,7 @@
 
 		<!--Host and standard user/password for UR Sim running in a VM-->
 		<ursimvm.install.username>ur</ursimvm.install.username>
-		<ursimvm.install.password>easybot</ursimvm.install.password>
+		<ursimvm.install.password>w</ursimvm.install.password>
 	</properties>
 
 	<build>
