@@ -5,7 +5,7 @@
 
 	<groupId>com.ur.thph</groupId>
 	<artifactId>modbus_BnT</artifactId>
-	<version>1.8.2</version>
+	<version>1.8.3</version>
 	<name>modbus_BnT</name>
 	<packaging>bundle</packaging>
 

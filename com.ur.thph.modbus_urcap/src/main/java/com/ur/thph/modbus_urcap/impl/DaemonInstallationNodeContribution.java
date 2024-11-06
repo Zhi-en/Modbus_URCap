@@ -102,15 +102,39 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		writer.appendLine("popup(\"Modbus xmlrpc is not available!\")");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus(1)
-		writer.appendLine("def init_tool_modbus(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus(address)");
+		//Modbus init method: ex --> init_tool_modbus_64bit(1)
+		writer.appendLine("def init_tool_modbus_64bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_64bit(address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_no_error_handling(1)
-		writer.appendLine("def init_tool_modbus_no_error_handling(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling(address)");
+		//Modbus init method: ex --> init_tool_modbus_32bit(1)
+		writer.appendLine("def init_tool_modbus_32bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_32bit(address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_tool_modbus_16bit(1)
+		writer.appendLine("def init_tool_modbus_16bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_16bit(address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_64bit(1)
+		writer.appendLine("def init_tool_modbus_no_error_handling_64bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_64bit(address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_32bit(1)
+		writer.appendLine("def init_tool_modbus_no_error_handling_32bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_32bit(address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_16bit(1)
+		writer.appendLine("def init_tool_modbus_no_error_handling_16bit(address):");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_16bit(address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
@@ -141,12 +165,6 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		//Modbus init method: ex --> tool_modbus_set_timeout(1)
 		writer.appendLine("def tool_modbus_set_timeout(timeout):");
 		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_set_timeout(timeout)");
-		writer.appendLine("return response");
-		writer.appendLine("end");
-		
-		//Modbus init method: ex --> tool_modbus_set_register_chaining(4)
-		writer.appendLine("def tool_modbus_set_register_chaining(num_of_registers):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_set_register_chaining(num_of_registers)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		

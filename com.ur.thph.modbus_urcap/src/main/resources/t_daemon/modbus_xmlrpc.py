@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-# Changelog
-# 2024-10-10: Wilfrid: Added more functions. Renamed init_modbus_communications to init_tool_modbus
-# 2024-10-17: Wilfrid: Extended all functions to error handling versions which return struct.
-# 2024-10-21: Zhi-en: Add error handling and number of bits (16, 32 or 64) to setting options
 
 import socket
 import struct
@@ -35,6 +31,42 @@ error_handling = True
 def isReachable():
   return True
 
+def init_tool_modbus_64bit(slaveaddress):
+  init_tool_modbus(slaveaddress)
+  global num_of_registers
+  num_of_registers = 4
+  return True
+
+def init_tool_modbus_32bit(slaveaddress):
+  init_tool_modbus(slaveaddress)
+  global num_of_registers
+  num_of_registers = 2
+  return True
+
+def init_tool_modbus_16bit(slaveaddress):
+  init_tool_modbus(slaveaddress)
+  global num_of_registers
+  num_of_registers = 1
+  return True
+
+def init_tool_modbus_no_error_handling_64bit(slaveaddress):
+  init_tool_modbus_64bit(slaveaddress)
+  global error_handling
+  error_handling = False
+  return True
+
+def init_tool_modbus_no_error_handling_32bit(slaveaddress):
+  init_tool_modbus_32bit(slaveaddress)
+  global error_handling
+  error_handling = False
+  return True
+
+def init_tool_modbus_no_error_handling_16bit(slaveaddress):
+  init_tool_modbus_16bit(slaveaddress)
+  global error_handling
+  error_handling = False
+  return True
+
 def init_tool_modbus(slaveaddress):
   global instrument
   #instrument = modbus.Instrument('/dev/ttyUSB0',slaveaddress)
@@ -53,14 +85,7 @@ def init_tool_modbus(slaveaddress):
   instrument.serial.timeout = timeout
   global error_handling
   error_handling = True
-  return True
 
-def init_tool_modbus_no_error_handling(slaveaddress):
-  ''' only 1 of this or init_tool_modbus should be called to initiate the modbus URCAP '''
-  init_tool_modbus(slaveaddress)
-  global error_handling
-  error_handling = False
-  return True
 
 ''' Functions for modifying default settings '''
 def tool_modbus_set_baudrate(baudrate):
@@ -100,14 +125,6 @@ def tool_modbus_set_stopbit(stopbit):
 def tool_modbus_set_timeout(timeout):
   instrument.serial.timeout = timeout
   return True
-
-def tool_modbus_set_register_chaining(register_chaining):
-  if register_chaining in (1,2,4):
-    global num_of_registers
-    num_of_registers = register_chaining
-    return True
-  else:
-    return False
 
 
 ''' Function for checking if connected in no error handling mode '''
@@ -346,7 +363,6 @@ def tool_modbus_write_holding(register_address, data):
 
 def tool_modbus_read_input(register_address):
   '''Function to read INT-16 data from slave using 1 register'''
-  global value
   try:
     value = int(instrument.read_register(register_address, 0, 4, True))
   except Exception as e:
@@ -471,14 +487,17 @@ server.RequestHandlerClass.protocol_version = "HTTP/1.1"
 print("Listening on port 40408...")
 
 server.register_function(isReachable,"isReachable")
-server.register_function(init_tool_modbus,"init_tool_modbus")
-server.register_function(init_tool_modbus_no_error_handling,"init_tool_modbus_no_error_handling")
+server.register_function(init_tool_modbus_64bit,"init_tool_modbus_64bit")
+server.register_function(init_tool_modbus_32bit,"init_tool_modbus_32bit")
+server.register_function(init_tool_modbus_16bit,"init_tool_modbus_16bit")
+server.register_function(init_tool_modbus_no_error_handling_64bit,"init_tool_modbus_no_error_handling_64bit")
+server.register_function(init_tool_modbus_no_error_handling_32bit,"init_tool_modbus_no_error_handling_32bit")
+server.register_function(init_tool_modbus_no_error_handling_16bit,"init_tool_modbus_no_error_handling_16bit")
 server.register_function(tool_modbus_set_baudrate,"tool_modbus_set_baudrate")
 server.register_function(tool_modbus_set_bytesize,"tool_modbus_set_bytesize")
 server.register_function(tool_modbus_set_parity,"tool_modbus_set_parity")
 server.register_function(tool_modbus_set_stopbit,"tool_modbus_set_stopbit")
 server.register_function(tool_modbus_set_timeout,"tool_modbus_set_timeout")
-server.register_function(tool_modbus_set_register_chaining,"tool_modbus_set_register_chaining")
 server.register_function(tool_modbus_check_connection,"tool_modbus_check_connection")
 server.register_function(tool_modbus_write_coil,"tool_modbus_write_coil")
 server.register_function(tool_modbus_read_discrete,"tool_modbus_read_discrete")
