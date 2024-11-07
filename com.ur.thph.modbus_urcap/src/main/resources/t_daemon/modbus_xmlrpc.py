@@ -158,11 +158,10 @@ def tool_modbus_check_connection(register_type, register):
 ''' Functions for bit communication '''
 def tool_modbus_write_coil(register_address, data):
   '''Function to write single BOOL to slave'''
-  result = {"error": "", "error_flag": False, "value": False}
+  result = {"value": data, "error": "", "error_flag": False}
   try:
     data = bool(data)
     instrument.write_bit(register_address, data, 5)
-    result["value"] = True
   except Exception as e:
     Logger.error("data: %s", data)
     Logger.error("Error in modbus write method", exc_info=True)
@@ -173,11 +172,11 @@ def tool_modbus_write_coil(register_address, data):
   elif result["error_flag"]:
     return result["error"]
   else:
-    return result["value"]
+    return True
 
 def tool_modbus_read_discrete(register_address):
   '''Function to read single BOOL from slave'''
-  result = {"error": "", "error_flag": False, "value": False}
+  result = {"value": False, "error": "", "error_flag": False}
   try:
     value = instrument.read_bit(register_address)
     result["value"] = bool(value)
@@ -194,7 +193,7 @@ def tool_modbus_read_discrete(register_address):
 
 def tool_modbus_read_coil(register_address):
   '''Function to read back BOOL from master'''
-  result = {"error": "", "error_flag": False, "value": False}
+  result = {"value": False, "error": "", "error_flag": False}
   try:
     value = instrument.read_bit(register_address, functioncode=1)
     result["value"] = bool(value)
@@ -225,7 +224,7 @@ def unsigned_to_signed(num_bits, value):
 ''' Funcionts for 16/32/64 bit communication '''
 def tool_modbus_write_holding_int(register_address, data):
   '''Function to write INT16/INT32/INT64 to slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
-  result = {"error": "", "error_flag": False, "value": False}
+  result = {"value": data, "error": "", "error_flag": False}
   try:
     data = int(data)
     data = signed_to_unsigned(num_of_registers*16, data)    # most significant bit denotes sign
@@ -233,7 +232,6 @@ def tool_modbus_write_holding_int(register_address, data):
     for i in range(num_of_registers-1, -1, -1):    # start from highest 16 bits to lowest 16 bits
       val.append((data >> 16*i) & 0xFFFF)
     instrument.write_registers(register_address*num_of_registers,val)
-    result["value"] = True
   except Exception as e:
     Logger.error("data: %s", data)
     for i in range(len(val)):
@@ -246,18 +244,17 @@ def tool_modbus_write_holding_int(register_address, data):
   elif result["error_flag"]:
     return result["error"]
   else:
-    return result["value"]
+    return True
 
 def tool_modbus_write_holding_float(register_address, data):
   '''Function to write FLOAT32/FLOAT64 to slave using 2/4 registers. Maps register_address to multiples of 2/4 to ensure no overlap. Will return error if num_of_registers = 1 '''
-  result = {"error": "", "error_flag": False, "value": False}
+  result = {"value": data, "error": "", "error_flag": False}
   if num_of_registers <2:
     result["error"] =  "16-bit does not support float types"
     result["error_flag"] = True
   else:
     try:
       instrument.write_float(register_address*num_of_registers, data, number_of_registers=num_of_registers)
-      result["value"] = True
     except Exception as e:
       Logger.error("data: %s", data)
       Logger.error("Error in modbus write method", exc_info=True)
@@ -268,11 +265,11 @@ def tool_modbus_write_holding_float(register_address, data):
   elif result["error_flag"]:
     return result["error"]
   else:
-    return result["value"]
+    True
 
 def tool_modbus_read_input_int(register_address):
   '''Function to read INT16/INT32/INT64 from slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
-  result = {"error": "", "error_flag": False, "value": 0}
+  result = {"value": 0, "error": "", "error_flag": False}
   try:
     val = instrument.read_registers(register_address*num_of_registers, num_of_registers, functioncode=4)
     val_comb = val[0]
@@ -292,7 +289,7 @@ def tool_modbus_read_input_int(register_address):
 
 def tool_modbus_read_input_float(register_address):
   '''Function to read FLOAT32/FLOAT64 from slave using 2/4 registers. Maps register_address to multiples of 2/4 to ensure no overlap. Will return error if num_of_registers = 1 '''
-  result = {"error": "", "error_flag": False, "value": 0.0}
+  result = {"value": 0.0, "error": "", "error_flag": False}
   if num_of_registers <2:
     result["error"] =  "16-bit does not support float types"
     result["error_flag"] = True
@@ -311,7 +308,7 @@ def tool_modbus_read_input_float(register_address):
 
 def tool_modbus_read_holding_int(register_address):
   '''Function to read back INT16/INT32/INT64 from master using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
-  result = {"error": "", "error_flag": False, "value": 0}
+  result = {"value": 0, "error": "", "error_flag": False}
   try:
     val = instrument.read_registers(register_address*num_of_registers, num_of_registers, functioncode=3)
     val_comb = val[0]
@@ -331,7 +328,7 @@ def tool_modbus_read_holding_int(register_address):
 
 def tool_modbus_read_holding_float(register_address):
   '''Function to read back FLOAT32/FLOAT64 from master using 2/4 registers. Maps register_address to multiples of 2/4 to ensure no overlap. Will return error if num_of_registers = 1 '''
-  result = {"error": "", "error_flag": False, "value": 0.0}
+  result = {"value": 0.0, "error": "", "error_flag": False}
   if num_of_registers <2:
     result["error"] =  "16-bit does not support float types"
     result["error_flag"] = True
