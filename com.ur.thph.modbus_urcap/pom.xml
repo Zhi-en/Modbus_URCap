@@ -5,7 +5,7 @@
 
 	<groupId>com.ur.thph</groupId>
 	<artifactId>modbus_BnT</artifactId>
-	<version>1.8.4</version>
+	<version>2.1.0</version>
 	<name>modbus_BnT</name>
 	<packaging>bundle</packaging>
 
@@ -20,7 +20,7 @@
 		<urcap.vendor>Wilfrid Lan and Zhi-en Tan</urcap.vendor>
 		<urcap.contactAddress> None </urcap.contactAddress>
 		<urcap.copyright>Copyright notice (C)</urcap.copyright>
-		<urcap.description>Baud Rate 115200. Connects to ttyTool </urcap.description>
+		<urcap.description>Default Baud Rate 115200. Tool functions connects to device attached to robot tool connector. USB functions connects to all USB devices which devname and IDserial contain the init function's input devname and IDserial strings. </urcap.description>
 		<urcap.licenseType>License type</urcap.licenseType>
 		<!--********************** END OF URCAP META DATA **********************-->
 		<!--********************************************************************-->

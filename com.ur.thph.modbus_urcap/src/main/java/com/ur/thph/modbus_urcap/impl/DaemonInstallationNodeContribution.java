@@ -1,6 +1,3 @@
-// Changelog
-// 2024-10-10: Wilfrid: Added more functions. Renamed init_modbus_communications to init_tool_modbus
-
 package com.ur.thph.modbus_urcap.impl;
 
 import java.awt.EventQueue;
@@ -101,40 +98,40 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		writer.appendLine("if ( isConnected != True):");
 		writer.appendLine("popup(\"Modbus xmlrpc is not available!\")");
 		writer.appendLine("end");
-		
-		//Modbus init method: ex --> init_tool_modbus_64bit(1)
-		writer.appendLine("def init_tool_modbus_64bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_64bit(address)");
+        
+        //Modbus init method: ex --> init_tool_modbus_64bit()
+		writer.appendLine("def init_tool_modbus_64bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_64bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_32bit(1)
-		writer.appendLine("def init_tool_modbus_32bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_32bit(address)");
+		//Modbus init method: ex --> init_tool_modbus_32bit()
+		writer.appendLine("def init_tool_modbus_32bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_32bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_16bit(1)
-		writer.appendLine("def init_tool_modbus_16bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_16bit(address)");
+		//Modbus init method: ex --> init_tool_modbus_16bit()
+		writer.appendLine("def init_tool_modbus_16bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_16bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_no_error_handling_64bit(1)
-		writer.appendLine("def init_tool_modbus_no_error_handling_64bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_64bit(address)");
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_64bit()
+		writer.appendLine("def init_tool_modbus_no_error_handling_64bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_64bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_no_error_handling_32bit(1)
-		writer.appendLine("def init_tool_modbus_no_error_handling_32bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_32bit(address)");
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_32bit()
+		writer.appendLine("def init_tool_modbus_no_error_handling_32bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_32bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> init_tool_modbus_no_error_handling_16bit(1)
-		writer.appendLine("def init_tool_modbus_no_error_handling_16bit(address):");
-		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_16bit(address)");
+		//Modbus init method: ex --> init_tool_modbus_no_error_handling_16bit()
+		writer.appendLine("def init_tool_modbus_no_error_handling_16bit():");
+		writer.appendLine("local response = modbus_xmlrpc.init_tool_modbus_no_error_handling_16bit()");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
@@ -156,9 +153,9 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> tool_modbus_set_stopbit(1)
-		writer.appendLine("def tool_modbus_set_stopbit(stopbit):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_set_stopbit(stopbit)");
+		//Modbus init method: ex --> tool_modbus_set_stopbits(1)
+		writer.appendLine("def tool_modbus_set_stopbits(stopbits):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_set_stopbits(stopbits)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
@@ -168,110 +165,236 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		writer.appendLine("return response");
 		writer.appendLine("end");
 		
-		//Modbus init method: ex --> tool_modbus_check_connection("holding", 0)
-		writer.appendLine("def tool_modbus_check_connection(register_type, register):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_check_connection(register_type, register)");
+		//Modbus init method: ex --> tool_modbus_check_connection(1, "holding", 0)
+		writer.appendLine("def tool_modbus_check_connection(slave_address, register_type, register):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_check_connection(slave_address, register_type, register)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 
-		//Modbus init method: ex --> tool_modbus_write_coil(0, false)
-		writer.appendLine("def tool_modbus_write_coil(register_address, value):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_coil(register_address, value)");
+		//Modbus init method: ex --> tool_modbus_write_coil(1, 0, false)
+		writer.appendLine("def tool_modbus_write_coil(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_coil(slave_address, register_address, value)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 
-		//Modbus init method: ex --> tool_modbus_read_discrete(0)
-		writer.appendLine("def tool_modbus_read_discrete(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_discrete(register_address)");
+		//Modbus init method: ex --> tool_modbus_read_discrete(1, 0)
+		writer.appendLine("def tool_modbus_read_discrete(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_discrete(slave_address, register_address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 
-		//Modbus init method: ex --> tool_modbus_read_coil(0)
-		writer.appendLine("def tool_modbus_read_coil(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_coil(register_address)");
+		//Modbus init method: ex --> tool_modbus_read_coil(1, 0)
+		writer.appendLine("def tool_modbus_read_coil(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_coil(slave_address, register_address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 
-		//Modbus init method: ex --> tool_modbus_write_holding_int(0,1)
-		writer.appendLine("def tool_modbus_write_holding_int(register_address, value):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding_int(register_address, value)");
+		//Modbus init method: ex --> tool_modbus_write_holding_int(1, 0, 1)
+		writer.appendLine("def tool_modbus_write_holding_int(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding_int(slave_address, register_address, value)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 
-		//Modbus init method: ex --> tool_modbus_write_holding_float(0,1.1)
-		writer.appendLine("def tool_modbus_write_holding_float(register_address, value):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding_float(register_address, value)");
-		writer.appendLine("return response");
-		writer.appendLine("end");
-	
-		//Modbus init method: ex --> tool_modbus_read_input_int(0)
-		writer.appendLine("def tool_modbus_read_input_int(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input_int(register_address)");
+		//Modbus init method: ex --> tool_modbus_write_holding_float(1, 0, 1.1)
+		writer.appendLine("def tool_modbus_write_holding_float(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding_float(slave_address, register_address, value)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
-		//Modbus init method: ex --> tool_modbus_read_input_float(0)
-		writer.appendLine("def tool_modbus_read_input_float(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input_float(register_address)");
+		//Modbus init method: ex --> tool_modbus_read_input_int(1, 0)
+		writer.appendLine("def tool_modbus_read_input_int(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input_int(slave_address, register_address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
-		//Modbus init method: ex --> tool_modbus_read_holding_int(0)
-		writer.appendLine("def tool_modbus_read_holding_int(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding_int(register_address)");
+		//Modbus init method: ex --> tool_modbus_read_input_float(1, 0)
+		writer.appendLine("def tool_modbus_read_input_float(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input_float(slave_address, register_address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
-		//Modbus init method: ex --> tool_modbus_read_holding_float(0)
-		writer.appendLine("def tool_modbus_read_holding_float(register_address):");
-		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding_float(register_address)");
+		//Modbus init method: ex --> tool_modbus_read_holding_int(1, 0)
+		writer.appendLine("def tool_modbus_read_holding_int(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding_int(slave_address, register_address)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
-		// writer.appendLine("def tool_modbus_write_holding(register_address, data):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding(register_address, data)");
+		//Modbus init method: ex --> tool_modbus_read_holding_float(1, 0)
+		writer.appendLine("def tool_modbus_read_holding_float(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding_float(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		// writer.appendLine("def tool_modbus_write_holding(slave_address, register_address, data):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding(slave_address, register_address, data)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_input(register_address):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input(register_address)");
+		// writer.appendLine("def tool_modbus_read_input(slave_address, register_address):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input(slave_address, register_address)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_holding(register_address):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding(register_address)");
+		// writer.appendLine("def tool_modbus_read_holding(slave_address, register_address):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding(slave_address, register_address)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_write_holdings(register_address, num_of_registers, decimal, data):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holdings(register_address, num_of_registers, decimal, data)");
+		// writer.appendLine("def tool_modbus_write_holdings(slave_address, register_address, num_of_registers, decimal, data):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holdings(slave_address, register_address, num_of_registers, decimal, data)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_inputs(register_address, num_of_registers, decimal):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_inputs(register_address, num_of_registers, decimal)");
+		// writer.appendLine("def tool_modbus_read_inputs(slave_address, register_address, num_of_registers, decimal):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_inputs(slave_address, register_address, num_of_registers, decimal)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_holdings(register_address, num_of_registers, decimal):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holdings(register_address, num_of_registers, decimal)");
+		// writer.appendLine("def tool_modbus_read_holdings(slave_address, register_address, num_of_registers, decimal):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holdings(slave_address, register_address, num_of_registers, decimal)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 	
-		// writer.appendLine("def tool_modbus_write_coils(register_address, data):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding(register_address, data)");
+		// writer.appendLine("def tool_modbus_write_coils(slave_address, register_address, data):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holding(slave_address, register_address, data)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_discretes(register_address):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input(register_address)");
+		// writer.appendLine("def tool_modbus_read_discretes(slave_address, register_address):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_input(slave_address, register_address)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
 
-		// writer.appendLine("def tool_modbus_read_coils(register_address):");
-		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding(register_address)");
+		// writer.appendLine("def tool_modbus_read_coils(slave_address, register_address):");
+		// writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_holding(slave_address, register_address)");
 		// writer.appendLine("return response");
 		// writer.appendLine("end");
+		
+		// Modbus init method: ex --> init_usb_modbus_64bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_64bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_64bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_usb_modbus_32bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_32bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_32bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_usb_modbus_16bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_16bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_16bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_usb_modbus_no_error_handling_64bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_no_error_handling_64bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_no_error_handling_64bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_usb_modbus_no_error_handling_32bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_no_error_handling_32bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_no_error_handling_32bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> init_usb_modbus_no_error_handling_16bit("ttyACM", "Arduino")
+		writer.appendLine("def init_usb_modbus_no_error_handling_16bit(usb_devname_contains, usb_IDserial_contains):");
+		writer.appendLine("local response = modbus_xmlrpc.init_usb_modbus_no_error_handling_16bit(usb_devname_contains, usb_IDserial_contains)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_set_baudrate(115200)
+		writer.appendLine("def usb_modbus_set_baudrate(baudrate):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_set_baudrate(baudrate)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_set_bytesize(8)
+		writer.appendLine("def usb_modbus_set_bytesize(bytesize):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_set_bytesize(bytesize)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_set_parity("None")
+		writer.appendLine("def usb_modbus_set_parity(parity):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_set_parity(parity)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_set_stopbits(1)
+		writer.appendLine("def usb_modbus_set_stopbits(stopbits):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_set_stopbits(stopbits)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_set_timeout(1)
+		writer.appendLine("def usb_modbus_set_timeout(timeout):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_set_timeout(timeout)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+		
+		//Modbus init method: ex --> usb_modbus_check_connection(1, "holding", 0)
+		writer.appendLine("def usb_modbus_check_connection(slave_address, register_type, register):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_check_connection(slave_address, register_type, register)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+
+		//Modbus init method: ex --> usb_modbus_write_coil(1, 0, false)
+		writer.appendLine("def usb_modbus_write_coil(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_write_coil(slave_address, register_address, value)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+
+		//Modbus init method: ex --> usb_modbus_read_discrete(1, 0)
+		writer.appendLine("def usb_modbus_read_discrete(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_discrete(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+
+		//Modbus init method: ex --> usb_modbus_read_coil(1, 0)
+		writer.appendLine("def usb_modbus_read_coil(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_coil(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+
+		//Modbus init method: ex --> usb_modbus_write_holding_int(1, 0, 1)
+		writer.appendLine("def usb_modbus_write_holding_int(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_write_holding_int(slave_address, register_address, value)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+
+		//Modbus init method: ex --> usb_modbus_write_holding_float(1, 0, 1.1)
+		writer.appendLine("def usb_modbus_write_holding_float(slave_address, register_address, value):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_write_holding_float(slave_address, register_address, value)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		//Modbus init method: ex --> usb_modbus_read_input_int(1, 0)
+		writer.appendLine("def usb_modbus_read_input_int(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_input_int(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		//Modbus init method: ex --> usb_modbus_read_input_float(1, 0)
+		writer.appendLine("def usb_modbus_read_input_float(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_input_float(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		//Modbus init method: ex --> usb_modbus_read_holding_int(1, 0)
+		writer.appendLine("def usb_modbus_read_holding_int(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_holding_int(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		//Modbus init method: ex --> usb_modbus_read_holding_float(1, 0)
+		writer.appendLine("def usb_modbus_read_holding_float(slave_address, register_address):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_holding_float(slave_address, register_address)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
 	}
 	
 	private void updateUI() {
