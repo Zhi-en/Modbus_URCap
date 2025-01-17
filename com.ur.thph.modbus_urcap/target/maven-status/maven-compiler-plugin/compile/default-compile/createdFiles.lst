@@ -1,0 +1,11 @@
+com/ur/thph/modbus_urcap/impl/ModbusDaemonInterface.class
+com/ur/thph/modbus_urcap/impl/UnknownResponseException.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeView$2.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeContribution$1.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeView$1.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeService.class
+com/ur/thph/modbus_urcap/impl/ModbusDaemonService.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeContribution.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeView.class
+com/ur/thph/modbus_urcap/impl/Activator.class
+com/ur/thph/modbus_urcap/impl/DaemonInstallationNodeContribution$2.class

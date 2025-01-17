@@ -1,0 +1,26 @@
+Manifest-Version: 1.0
+Bnd-LastModified: 1737083170565
+Build-Jdk: 1.8.0_292
+Built-By: ur
+Bundle-Activator: com.ur.thph.modbus_urcap.impl.Activator
+Bundle-Category: URCap
+Bundle-ContactAddress: None
+Bundle-Copyright: Copyright notice (C)
+Bundle-Description: Default Baud Rate 115200. Tool functions connects to
+  device attached to robot tool connector. USB functions connects to all
+  USB devices which devname and IDserial contain the init function's inp
+ ut devname and IDserial strings.
+Bundle-LicenseType: License type
+Bundle-ManifestVersion: 2
+Bundle-Name: modbus_BnT
+Bundle-SymbolicName: com.ur.thph.modbus_BnT
+Bundle-Vendor: Wilfrid Lan and Zhi-en Tan
+Bundle-Version: 2.2.0
+Created-By: Apache Maven Bundle Plugin
+Import-Package: com.ur.urcap.api.contribution;version="[1.7,2)",com.ur.u
+ rcap.api.contribution.installation;version="[1.7,2)",com.ur.urcap.api.c
+ ontribution.installation.swing;version="[1.7,2)",com.ur.urcap.api.domai
+ n.data;version="[1.7,2)",com.ur.urcap.api.domain.script;version="[1.7,2
+ )",javax.swing,org.apache.xmlrpc;version="[3.1,4)",org.apache.xmlrpc.cl
+ ient;version="[3.1,4)",org.osgi.framework;version="[1.6,2)"
+Tool: Bnd-2.1.0.20130426-122213
