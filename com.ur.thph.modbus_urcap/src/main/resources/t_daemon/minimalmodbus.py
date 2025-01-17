@@ -102,8 +102,8 @@ class Instrument:
     Args:
         * port (str): The serial port name, for example ``/dev/ttyUSB0`` (Linux),
           ``/dev/tty.usbserial`` (OS X) or ``COM4`` (Windows).
-        # * slaveaddress (int): Slave address in the range 1 to 247 (use decimal numbers,
-        #   not hex). Address 0 is for broadcast, and 248-255 are reserved.
+        * slaveaddress (int): Slave address in the range 1 to 247 (use decimal numbers,
+          not hex). Address 0 is for broadcast, and 248-255 are reserved.
         * mode (str): Mode selection. Can be MODE_RTU or MODE_ASCII.
         * close_port_after_each_call (bool): If the serial port should be closed after
           each call to the instrument.
@@ -114,15 +114,15 @@ class Instrument:
     def __init__(
         self,
         port,
-        # slaveaddress,
+        slaveaddress,
         mode=MODE_RTU,
         close_port_after_each_call=False,
         debug=False,
     ):
         """Initialize instrument and open corresponding serial port."""
-        # self.address = slaveaddress
-        # """Slave address (int). Most often set by the constructor
-        # (see the class documentation). """
+        self.address = slaveaddress
+        """Slave address (int). Most often set by the constructor
+        (see the class documentation). """
 
         self.mode = mode
         """Slave mode (str), can be MODE_RTU or MODE_ASCII.
@@ -228,8 +228,7 @@ class Instrument:
     def __repr__(self):
         """Give string representation of the :class:`.Instrument` object."""
         template = (
-            # "{}.{}<id=0x{:x}, address={}, mode={}, close_port_after_each_call={}, "
-            "{}.{}<id=0x{:x}, mode={}, close_port_after_each_call={}, "
+            "{}.{}<id=0x{:x}, address={}, mode={}, close_port_after_each_call={}, "
             + "precalculate_read_size={}, clear_buffers_before_each_transaction={}, "
             + "handle_local_echo={}, debug={}, serial={}>"
         )
@@ -237,7 +236,7 @@ class Instrument:
             self.__module__,
             self.__class__.__name__,
             id(self),
-            # self.address,
+            self.address,
             self.mode,
             self.close_port_after_each_call,
             self.precalculate_read_size,
@@ -255,13 +254,12 @@ class Instrument:
     #  Methods for talking to the slave #
     # ################################# #
 
-    def read_bit(self, slaveaddress, registeraddress, functioncode=2):
+    def read_bit(self, registeraddress, functioncode=2):
         """Read one bit from the slave (instrument).
 
         This is for a bit that has its individual address in the instrument.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register address (use decimal numbers, not hex).
             * functioncode (int): Modbus function code. Can be 1 or 2.
 
@@ -275,20 +273,18 @@ class Instrument:
         """
         _check_functioncode(functioncode, [1, 2])
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_bits=1,
             payloadformat=_PAYLOADFORMAT_BIT,
         )
 
-    def write_bit(self, slaveaddress, registeraddress, value, functioncode=5):
+    def write_bit(self, registeraddress, value, functioncode=5):
         """Write one bit to the slave (instrument).
 
         This is for a bit that has its individual address in the instrument.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register address (use decimal numbers, not hex).
             * value (int or bool): 0 or 1, or True or False
             * functioncode (int): Modbus function code. Can be 5 or 15.
@@ -304,7 +300,6 @@ class Instrument:
         _check_functioncode(functioncode, [5, 15])
         _check_int(value, minvalue=0, maxvalue=1, description="input value")
         self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             value,
@@ -312,13 +307,12 @@ class Instrument:
             payloadformat=_PAYLOADFORMAT_BIT,
         )
 
-    def read_bits(self, slaveaddress, registeraddress, number_of_bits, functioncode=2):
+    def read_bits(self, registeraddress, number_of_bits, functioncode=2):
         """Read multiple bits from the slave (instrument).
 
         This is for bits that have individual addresses in the instrument.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address  (use decimal
               numbers, not hex).
             * number_of_bits (int): Number of bits to read
@@ -341,14 +335,13 @@ class Instrument:
             description="number of bits",
         )
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_bits=number_of_bits,
             payloadformat=_PAYLOADFORMAT_BITS,
         )
 
-    def write_bits(self, slaveaddress, registeraddress, values):
+    def write_bits(self, registeraddress, values):
         """Write multiple bits to the slave (instrument).
 
         This is for bits that have individual addresses in the instrument.
@@ -356,7 +349,6 @@ class Instrument:
         Uses Modbus functioncode 15.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * values (list of int or bool): 0 or 1, or True or False. The first
@@ -383,7 +375,6 @@ class Instrument:
         )
 
         self._generic_command(
-            slaveaddress,
             15,
             registeraddress,
             values,
@@ -392,12 +383,7 @@ class Instrument:
         )
 
     def read_register(
-        self,
-        slaveaddress,
-        registeraddress,
-        number_of_decimals=0,
-        functioncode=3,
-        signed=False
+        self, registeraddress, number_of_decimals=0, functioncode=3, signed=False
     ):
         """Read an integer from one 16-bit register in the slave, possibly scaling it.
 
@@ -405,7 +391,6 @@ class Instrument:
         ("Unsigned INT16").
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register address (use decimal numbers, not hex).
             * number_of_decimals (int): The number of decimals for content conversion.
             * functioncode (int): Modbus function code. Can be 3 or 4.
@@ -454,7 +439,6 @@ class Instrument:
         )
         _check_bool(signed, description="signed")
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_decimals=number_of_decimals,
@@ -465,7 +449,6 @@ class Instrument:
 
     def write_register(
         self,
-        slaveaddress,
         registeraddress,
         value,
         number_of_decimals=0,
@@ -478,7 +461,6 @@ class Instrument:
         65535 ("Unsigned INT16").
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register address  (use decimal
               numbers, not hex).
             * value (int or float): The value to store in the slave register (might be
@@ -527,7 +509,6 @@ class Instrument:
         _check_numerical(value, description="input value")
 
         self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             value,
@@ -538,12 +519,7 @@ class Instrument:
         )
 
     def read_long(
-        self,
-        slaveaddress,
-        registeraddress,
-        functioncode=3,
-        signed=False,
-        byteorder=BYTEORDER_BIG
+        self, registeraddress, functioncode=3, signed=False, byteorder=BYTEORDER_BIG
     ):
         """Read a long integer (32 bits) from the slave.
 
@@ -551,7 +527,6 @@ class Instrument:
         registers in the slave.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal numbers,
               not hex).
             * functioncode (int): Modbus function code. Can be 3 or 4.
@@ -577,7 +552,6 @@ class Instrument:
         _check_functioncode(functioncode, [3, 4])
         _check_bool(signed, description="signed")
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_registers=2,
@@ -586,14 +560,7 @@ class Instrument:
             payloadformat=_PAYLOADFORMAT_LONG,
         )
 
-    def write_long(
-        self,
-        slaveaddress,
-        registeraddress,
-        value,
-        signed=False,
-        byteorder=BYTEORDER_BIG
-    ):
+    def write_long(self, registeraddress, value, signed=False, byteorder=BYTEORDER_BIG):
         """Write a long integer (32 bits) to the slave.
 
         Long integers (32 bits = 4 bytes) are stored in two consecutive 16-bit
@@ -605,7 +572,6 @@ class Instrument:
         and on alternative names, see :meth:`.read_long`.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address  (use decimal
               numbers, not hex).
             * value (int or long): The value to store in the slave.
@@ -632,7 +598,6 @@ class Instrument:
         )
         _check_bool(signed, description="signed")
         self._generic_command(
-            slaveaddress,
             16,
             registeraddress,
             value,
@@ -644,7 +609,6 @@ class Instrument:
 
     def read_float(
         self,
-        slaveaddress,
         registeraddress,
         functioncode=3,
         number_of_registers=2,
@@ -662,7 +626,6 @@ class Instrument:
         it makes sense for your instrument. If not, change the ``byteorder`` argument.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * functioncode (int): Modbus function code. Can be 3 or 4.
@@ -697,7 +660,6 @@ class Instrument:
             description="number of registers",
         )
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_registers=number_of_registers,
@@ -706,12 +668,7 @@ class Instrument:
         )
 
     def write_float(
-        self,
-        slaveaddress,
-        registeraddress,
-        value,
-        number_of_registers=2,
-        byteorder=BYTEORDER_BIG
+        self, registeraddress, value, number_of_registers=2, byteorder=BYTEORDER_BIG
     ):
         """Write a floating point number to the slave.
 
@@ -723,7 +680,6 @@ class Instrument:
         see :meth:`.read_float`.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * value (float or int): The value to store in the slave
@@ -751,7 +707,6 @@ class Instrument:
             description="number of registers",
         )
         self._generic_command(
-            slaveaddress,
             16,
             registeraddress,
             value,
@@ -760,7 +715,7 @@ class Instrument:
             payloadformat=_PAYLOADFORMAT_FLOAT,
         )
 
-    def read_string(self, slaveaddress, registeraddress, number_of_registers=16, functioncode=3):
+    def read_string(self, registeraddress, number_of_registers=16, functioncode=3):
         """Read an ASCII string from the slave.
 
         Each 16-bit register in the slave are interpreted as two characters
@@ -770,7 +725,6 @@ class Instrument:
         International characters (Unicode/UTF-8) are not supported.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * number_of_registers (int): The number of registers allocated for the string.
@@ -795,14 +749,13 @@ class Instrument:
             description="number of registers for read string",
         )
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_registers=number_of_registers,
             payloadformat=_PAYLOADFORMAT_STRING,
         )
 
-    def write_string(self, slaveaddress, registeraddress, textstring, number_of_registers=16):
+    def write_string(self, registeraddress, textstring, number_of_registers=16):
         """Write an ASCII string to the slave.
 
         Each 16-bit register in the slave are interpreted as two characters
@@ -814,7 +767,6 @@ class Instrument:
         International characters (Unicode/UTF-8) are not supported.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address  (use decimal
               numbers, not hex).
             * textstring (str): The string to store in the slave, must be ASCII.
@@ -848,7 +800,6 @@ class Instrument:
             force_ascii=True,
         )
         self._generic_command(
-            slaveaddress,
             16,
             registeraddress,
             textstring,
@@ -856,14 +807,13 @@ class Instrument:
             payloadformat=_PAYLOADFORMAT_STRING,
         )
 
-    def read_registers(self, slaveaddress, registeraddress, number_of_registers, functioncode=3):
+    def read_registers(self, registeraddress, number_of_registers, functioncode=3):
         """Read integers from 16-bit registers in the slave.
 
         The slave registers can hold integer values in the range 0 to
         65535 ("Unsigned INT16").
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * number_of_registers (int): The number of registers to read, max 125 registers.
@@ -892,14 +842,13 @@ class Instrument:
             description="number of registers",
         )
         return self._generic_command(
-            slaveaddress,
             functioncode,
             registeraddress,
             number_of_registers=number_of_registers,
             payloadformat=_PAYLOADFORMAT_REGISTERS,
         )
 
-    def write_registers(self, slaveaddress, registeraddress, values):
+    def write_registers(self, registeraddress, values):
         """Write integers to 16-bit registers in the slave.
 
         The slave register can hold integer values in the range 0 to
@@ -911,7 +860,6 @@ class Instrument:
         the ``values`` list.
 
         Args:
-            * slaveaddress (int): Address of the slave (use decimal numbers, not hex).
             * registeraddress (int): The slave register start address (use decimal
               numbers, not hex).
             * values (list of int): The values to store in the slave registers,
@@ -945,7 +893,6 @@ class Instrument:
         # Note: The content of the list is checked at content conversion.
 
         self._generic_command(
-            slaveaddress,
             16,
             registeraddress,
             values,
@@ -959,7 +906,6 @@ class Instrument:
 
     def _generic_command(
         self,
-        slaveaddress,
         functioncode,
         registeraddress,
         value=None,
@@ -973,9 +919,6 @@ class Instrument:
         """Perform generic command for reading and writing registers and bits.
 
         Args:
-            * slaveaddress (int): Address of the slave to send command to.
-              In the range 1 to 247 (use decimal numbers, not hex).
-              Address 0 is for broadcast, and 248-255 are reserved.
             * functioncode (int): Modbus function code.
             * registeraddress (int): The register address  (use decimal numbers, not hex).
             * value (numerical or string or None or list of int): The value to store
@@ -1224,7 +1167,7 @@ class Instrument:
         )
 
         # Communicate with instrument
-        payload_from_slave = self._perform_command(slaveaddress, functioncode, payload_to_slave)
+        payload_from_slave = self._perform_command(functioncode, payload_to_slave)
 
         # Parse response payload
         return _parse_payload(
@@ -1244,11 +1187,10 @@ class Instrument:
     # Communication implementation details #
     # #################################### #
 
-    def _perform_command(self, slaveaddress, functioncode, payload_to_slave):
+    def _perform_command(self, functioncode, payload_to_slave):
         """Perform the command having the *functioncode*.
 
         Args:
-            * slaveaddress (int): The address of the slave to send command to.
             * functioncode (int): The function code for the command to be performed.
               Can for example be 'Write register' = 16.
             * payload_to_slave (str): Data to be transmitted to the slave (will be
@@ -1274,8 +1216,7 @@ class Instrument:
 
         # Build request
         request = _embed_payload(
-            # self.address, self.mode, functioncode, payload_to_slave
-            slaveaddress, self.mode, functioncode, payload_to_slave
+            self.address, self.mode, functioncode, payload_to_slave
         )
 
         # Calculate number of bytes to read
@@ -1300,8 +1241,7 @@ class Instrument:
 
         # Extract payload
         payload_from_slave = _extract_payload(
-            # response, self.address, self.mode, functioncode
-            response, slaveaddress, self.mode, functioncode
+            response, self.address, self.mode, functioncode
         )
         return payload_from_slave
 
