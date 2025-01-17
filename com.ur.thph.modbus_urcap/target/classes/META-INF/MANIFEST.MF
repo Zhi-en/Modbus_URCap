@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1736997321140
+Bnd-LastModified: 1737083170565
 Build-Jdk: 1.8.0_292
 Built-By: ur
 Bundle-Activator: com.ur.thph.modbus_urcap.impl.Activator
