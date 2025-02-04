@@ -5,7 +5,7 @@
 
 	<groupId>com.ur.thph</groupId>
 	<artifactId>modbus_BnT</artifactId>
-	<version>2.2.0</version>
+	<version>2.3.0</version>
 	<name>modbus_BnT</name>
 	<packaging>bundle</packaging>
 
@@ -31,7 +31,7 @@
 		<urcap.install.password>easybot</urcap.install.password>
 
 		<!--Install path for the UR Sim-->
-		<ursim.home>/home/ur/ursim/ursim-5.5.1.82186</ursim.home>
+		<ursim.home>/home/ur/ursim/ursim-5.15.0.126572</ursim.home>
 
 		<!--Host and standard user/password for UR Sim running in a VM-->
 		<ursimvm.install.username>ur</ursimvm.install.username>

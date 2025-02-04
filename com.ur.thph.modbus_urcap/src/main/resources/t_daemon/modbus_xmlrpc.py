@@ -8,7 +8,7 @@ import os, sys
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
-import minimalmodbus as modbus
+import additionalmodbus as modbus
 import serial
 import subprocess
 
@@ -49,39 +49,31 @@ def isReachable():
     return True
 
 ''' helper functions for packing and unpacking ints and floats'''
-def pack_registers(val_ls, registers_per_val, dtype):
-    # error handling
-    if not isinstance(dtype, list):
-        dtype = [dtype] * len(val_ls)
+def pack_registers(val_ls, dtype_ls):
+    mapping_conversion = {
+        "int16": ">h",
+        "uint16": ">H",
+        "int32": ">i",
+        "uint32": ">I",
+        "float": ">f",
+        "float32": ">f",
+        "int64": ">q",
+        "uint64": ">Q",
+        "double": ">d",
+        "float64": ">d",
+    }
 
-    if len(dtype) != len(val_ls):
+    if len(dtype_ls) != len(val_ls):
         raise IndexError(
             "The length of the dtype list ({}) shoould be equal to the length of the values to write ({})".format(len(dtype), len(val_ls))
         )
-    if registers_per_val == 1:
-        for dtypes in dtype:
-            if dtypes not in ["int", int]:
-                raise TypeError(
-                    "Unexpected dtype uncountered: {}".format(dtypes)
-                )
-    elif registers_per_val == 2 or registers_per_val ==4:
-        for dtypes in dtype:
-            if dtypes not in ["int", "float", int, float]:
-                raise TypeError(
-                    "Unexpected dtype uncountered: {}".format(dtypes)
-                )
-    else:
-        raise ValueError(
-            "Unexpected register chaining value {} instead of 1, 2 or 4".format(registers_per_val)
-        )
-    
-    if registers_per_val == 1:
-        mapping = {int: ">h", "int": ">h", "uint": ">H"}    # shorts: h (int16) or H (uint16)
-    elif registers_per_val == 2:
-        mapping = {int: ">i", "int": ">i", "uint": ">I", float: ">f", "float": ">f"}    # integers: i (int32) or I (uint32), float: f (float32)
-    elif registers_per_val == 4:
-        mapping = {int: ">q", "int": ">q", "uint": ">Q", float: ">d", "float": ">d"}    # integers: q (int64) or Q (uint64), float: d (float64)
-    formatcode = [mapping[dtypes] for dtypes in dtype]
+    for dtype in dtype_ls:
+        if dtype not in list(mapping_conversion.keys()):
+            raise TypeError(
+                "Unexpected dtype uncountered: {}".format(dtype)
+            )
+            
+    formatcode = [mapping_conversion[dtype] for dtype in dtype_ls]
     bs_ls = [struct.pack(formatc, val) for val, formatc in zip(val_ls, formatcode)]    # convert relevant format to bytestring
     bs_ls_16bit = []
     for bs in bs_ls:
@@ -89,48 +81,125 @@ def pack_registers(val_ls, registers_per_val, dtype):
 
     return [struct.unpack(">H", bytestring)[0] for bytestring in bs_ls_16bit]  # convert bytestrings to uint16
 
-def unpack_registers(val_ls, registers_per_val, dtype):
-    # error handling
-    if len(val_ls)%registers_per_val != 0:
-        raise IndexError(
-            "The number of registers read ({}) should be a multiple of the register chaining value ({})".format(len(val_ls), registers_per_val)
-        )
-    if not isinstance(dtype, list):
-        dtype = [dtype] * int(len(val_ls) / registers_per_val)
 
-    if len(dtype) != len(val_ls) / registers_per_val:
+def unpack_registers(val_ls, dtype_ls):
+    mapping_conversion = {
+        "int16": ">h",
+        "uint16": ">H",
+        "int32": ">i",
+        "uint32": ">I",
+        "float": ">f",
+        "float32": ">f",
+        "int64": ">q",
+        "uint64": ">Q",
+        "double": ">d",
+        "float64": ">d",
+    }
+    mapping_length = {
+        "int16": 1,
+        "uint16": 1,
+        "int32": 2,
+        "uint32": 2,
+        "float": 2,
+        "float32": 2,
+        "int64": 4,
+        "uint64": 4,
+        "double": 4,
+        "float64": 4,
+    }
+
+    for dtype in dtype_ls:
+        if dtype not in list(mapping_conversion.keys()):
+            raise TypeError(
+                "Unexpected dtype uncountered: {}".format(dtype)
+            )
+
+    if len(val_ls) != sum([mapping_length[dtype] for dtype in dtype_ls]):
         raise IndexError(
-            "The length of the dtype list ({}) shoould be equal to the length of the values to read ({})".format(len(dtype), len(val_ls) / registers_per_val)
+            "The length of register list received {} does not match the expected length {}".format(len(bin_str), last_read)
         )
-    if registers_per_val == 1:
-        for dtypes in dtype:
-            if dtypes not in ["int", int]:
-                raise TypeError(
-                    "Unexpected dtype uncountered: {}".format(dtypes)
-                )
-    elif registers_per_val == 2 or registers_per_val ==4:
-        for dtypes in dtype:
-            if dtypes not in ["int", "float", int, float]:
-                raise TypeError(
-                    "Unexpected dtype uncountered: {}".format(dtypes)
-                )
-    else:
-        raise ValueError(
-            "Unexpected register chaining value {} instead of 1, 2 or 4".format(registers_per_val)
-        )
-    
+            
     bs_ls = [struct.pack(">H", val) for val in val_ls]  # convert uint16 to bytestrings
-    if registers_per_val == 1:
-        mapping = {int: ">h", "int": ">h", "uint": ">H"}    # shorts: h (int16) or H (uint16)
-    elif registers_per_val == 2:
-        mapping = {int: ">i", "int": ">i", "uint": ">I", float: ">f", "float": ">f"}    # integers: i (int32) or I (uint32), float: f (float32)
-        bs_ls = [bs1+bs2 for bs1,bs2 in zip(bs_ls[0::2],bs_ls[1::2])]  # combine bytestring pairs
-    elif registers_per_val == 4:
-        mapping = {int: ">q", "int": ">q", "uint": ">Q", float: ">d", "float": ">d"}    # integers: q (int64) or Q (uint64), float: d (float64)
-        bs_ls = [bs1+bs2+bs3+bs4 for bs1,bs2,bs3,bs4 in zip(bs_ls[0::4],bs_ls[1::4],bs_ls[2::4],bs_ls[3::4])]  # combine bytestring 4s
-    formatcode = [mapping[dtypes] for dtypes in dtype]
+    last_read = 0
+    out_ls = []
+    for dtype in dtype_ls:
+        read_len = mapping_length[dtype]
+        bytestring = b''.join(bs_ls[last_read:last_read+read_len])
+        out_ls.append(struct.unpack(mapping_conversion[dtype], bytestring)[0])
+        last_read += read_len
 
-    return [struct.unpack(formatc, bytestring)[0] for bytestring, formatc in zip(bs_ls,formatcode)]  # convert bytestring to relevant format
+    return out_ls
+
+def pack_to_uint16(val_ls, dtype_ls):
+    mapping_conversion = {
+        "bool": bool,
+        "bit": bool,
+        "uint8": np.uint8,
+    }
+    mapping_length = {
+        "bool": 1,
+        "bit": 1,
+        "uint8": 8,
+    }
+
+    if len(dtype_ls) != len(val_ls):
+        raise IndexError(
+            "The length of the dtype list ({}) shoould be equal to the length of the values to write ({})".format(len(dtype), len(val_ls))
+        )
+    for dtype in dtype_ls:
+        if dtype not in list(mapping_conversion.keys()):
+            raise TypeError(
+                "Unexpected dtype uncountered: {}".format(dtype)
+            )
+    if sum([mapping_length[dtype] for dtype in dtype_ls]) > 16:
+        raise IndexError(
+            "The expected output bit length is {}, should be 16 or less".format(sum([mapping_length[dtype] for dtype in dtype_ls]))
+        )
+
+    bin_str = ''
+    for val, dtype in zip(val_ls, dtype_ls):
+        bin_str += bin(mapping_conversion[dtype](val))[2:].zfill(mapping_length[dtype])     # convert each val to binary and add to binary str
+    bin_str += '0'*(16-len(bin_str))    # pad the remaining empty bits with 0
+    return int(bin_str, 2)  # convert to integer and return
+
+def unpack_from_uint16(val, dtype_ls):
+    mapping_conversion = {
+        "bool": bool,
+        "bit": bool,
+        "uint8": np.uint8,
+    }
+    mapping_length = {
+        "bool": 1,
+        "bit": 1,
+        "uint8": 8,
+    }
+    if not isinstance(val, int):
+        raise TypeError(
+            "Expected uint16, given: {}".format(val)
+        )
+    if val < 0 or val > 65535:
+        raise TypeError(
+            "Expected uint16, given: {}".format(val)
+        )
+    for dtype in dtype_ls:
+        if dtype not in list(mapping_conversion.keys()):
+            raise TypeError(
+                "Unexpected dtype uncountered: {}".format(dtype)
+            )
+    if sum([mapping_length[dtype] for dtype in dtype_ls]) > 16:
+        raise IndexError(
+            "The expected output bit length is {}, should be 16 or less".format(sum([mapping_length[dtype] for dtype in dtype_ls]))
+        )
+
+    bin_str = bin(val)[2:].zfill(16)    # convert input to binary
+    last_read = 0
+    out_ls = []
+    for dtype in dtype_ls:
+        read_len = mapping_length[dtype]
+        bin_val = bin_str[last_read:last_read+read_len]
+        out_ls.append(int(bin_val, 2))
+        last_read += read_len
+    return out_ls
 
 
 ''' functions for tool modbus '''
@@ -285,14 +354,18 @@ def tool_modbus_check_connection(slave_address, register_type, register):
 def tool_modbus_write_coil(slave_address, register_address, data):
     '''Function to write single BOOL to slave'''
     result = {"value": data, "error": "", "error_flag": False}
-    try:
-        data = bool(data)
-        instrument_tool[slave_address].write_bit(register_address, data)
-    except Exception as e:
-        Logger.error("data: %s", data)
-        Logger.error("Error in modbus write method", exc_info=True)
-        result["error"] = repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            data = bool(data)
+            instrument_tool[slave_address].write_bit(register_address, data)
+        except Exception as e:
+            Logger.error("data: %s", data)
+            Logger.error("Error in modbus write method", exc_info=True)
+            result["error"] = repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -303,13 +376,17 @@ def tool_modbus_write_coil(slave_address, register_address, data):
 def tool_modbus_read_discrete(slave_address, register_address):
     '''Function to read single BOOL from slave'''
     result = {"value": False, "error": "", "error_flag": False}
-    try:
-        value = instrument_tool[slave_address].read_bit(register_address, functioncode=2)
-        result["value"] = bool(value)
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            value = instrument_tool[slave_address].read_bit(register_address, functioncode=2)
+            result["value"] = bool(value)
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -320,13 +397,17 @@ def tool_modbus_read_discrete(slave_address, register_address):
 def tool_modbus_read_coil(slave_address, register_address):
     '''Function to read back BOOL from master'''
     result = {"value": False, "error": "", "error_flag": False}
-    try:
-        value = instrument_tool[slave_address].read_bit(register_address, functioncode=1)
-        result["value"] = bool(value)
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            value = instrument_tool[slave_address].read_bit(register_address, functioncode=1)
+            result["value"] = bool(value)
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -339,15 +420,19 @@ def tool_modbus_write_coils(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": False}
     if not isinstance(data, list):
         data = [data]
-    try:
-        data = list(map(bool,data))
-        instrument_tool[slave_address].write_bits(register_address, data)
-    except Exception as e:
-        for i in range(len(data)):
-            Logger.error("val{}:{}".format(i,data[i]))
-        Logger.error("Error in modbus write method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            data = list(map(bool,data))
+            instrument_tool[slave_address].write_bits(register_address, data)
+        except Exception as e:
+            for i in range(len(data)):
+                Logger.error("val{}:{}".format(i,data[i]))
+            Logger.error("Error in modbus write method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -358,16 +443,20 @@ def tool_modbus_write_coils(slave_address, register_address, data):
 def tool_modbus_read_discretes(slave_address, register_address, num_of_registers):
     '''Function to read multiple BOOL from slave in list format or single BOOL as BOOL'''
     result = {"value": [False]*num_of_registers, "error": "", "error_flag": False}
-    try:
-        value = instrument_tool[slave_address].read_bits(register_address, num_of_registers, functioncode=2)
-        if num_of_registers == 1:
-            result["value"] = bool(value[0])
-        else:
-            result["value"] = list(map(bool,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            value = instrument_tool[slave_address].read_bits(register_address, num_of_registers, functioncode=2)
+            if num_of_registers == 1:
+                result["value"] = bool(value[0])
+            else:
+                result["value"] = list(map(bool,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -378,16 +467,20 @@ def tool_modbus_read_discretes(slave_address, register_address, num_of_registers
 def tool_modbus_read_coils(slave_address, register_address, num_of_registers):
     '''Function to read back multiple BOOL from master in list format or single BOOL as BOOL'''
     result = {"value": [False]*num_of_registers, "error": "", "error_flag": False}
-    try:
-        value = instrument_tool[slave_address].read_bits(register_address, num_of_registers, functioncode=1)
-        if num_of_registers == 1:
-            result["value"] = bool(value[0])
-        else:
-            result["value"] = list(map(bool,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            value = instrument_tool[slave_address].read_bits(register_address, num_of_registers, functioncode=1)
+            if num_of_registers == 1:
+                result["value"] = bool(value[0])
+            else:
+                result["value"] = list(map(bool,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -397,6 +490,60 @@ def tool_modbus_read_coils(slave_address, register_address, num_of_registers):
 
 
 ''' Functions for 16/32/64 bit communication '''
+def tool_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype):
+    '''Function to write and read multiple types of data to slave. Underlying communication uses registers'''
+    if not isinstance(write_data, list):
+        write_data = [write_data]
+    if not isinstance(write_dtype, list):
+        write_dtype = [write_dtype]
+    if not isinstance(read_dtype, list):
+        read_dtype = [read_dtype]
+    read_num_of_values = len(read_dtype)
+    if read_num_of_values == 1:
+        result = {"value": 0, "error": "", "error_flag": False}
+    else:
+        result = {"value": [0]*read_num_of_values, "error": "", "error_flag": False}
+    try:
+        for i in range(len(write_data)):
+            if write_dtype[i] in ["int", "uint"]:
+                write_data[i] = int(write_data[i])
+            elif write_dtype[i] in ["float"]:
+                write_data[i] = float(write_data[i])
+        write_dtype = [dtype + str(16*num_of_registers_tool) for dtype in write_dtype]
+        read_dtype = [dtype + str(16*num_of_registers_tool) for dtype in read_dtype]
+    except Exception as e:
+        result["error"] = repr(e).replace('"',"'")
+    else:
+        if slave_address not in instrument_tool:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+            result["error_flag"] = True
+        else:
+            try:
+                write_ls = pack_registers(write_data, write_dtype)
+                read_ls = instrument_tool[slave_address].read_write_registers(
+                    read_register_address*num_of_registers_tool,
+                    read_num_of_values*num_of_registers_tool,
+                    write_register_address*num_of_registers_tool,
+                    write_ls)
+                value = unpack_registers(read_ls, read_dtype)
+                if read_num_of_values == 1:
+                    result["value"] = value[0]
+                else:
+                    result["value"] = value
+            except Exception as e:
+                for i in range(len(write_data)):
+                    Logger.error("val{}: {}".format(i,write_data[i]))
+                Logger.error("Error in modbus write method", exc_info=True)
+                result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+                result["error_flag"] = True
+    if error_handling_tool:
+        return result
+    elif result["error_flag"]:
+        return result["error"]
+    else:
+        return result["value"]
+
+
 def tool_modbus_write_holdings(slave_address, register_address, data, dtype):
     '''Function to write multiple INT16/INT32/INT64/FLOAT32/FLOAT64 to slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.
     length of data should be equal to length of dtype'''
@@ -411,18 +558,23 @@ def tool_modbus_write_holdings(slave_address, register_address, data, dtype):
                 data[i] = int(data[i])
             elif dtype[i] in ["float", float]:
                 data[i] = float(data[i])
+        dtype = [dtypes + str(16*num_of_registers_tool) for dtypes in dtype]
     except Exception as e:
         result["error"] = repr(e).replace('"',"'")
     else:
-        try:
-            val_ls = pack_registers(data, num_of_registers_tool, dtype)
-            instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
-        except Exception as e:
-            for i in range(len(data)):
-                Logger.error("val{}: {}".format(i,data[i]))
-            Logger.error("Error in modbus write method", exc_info=True)
-            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+        if slave_address not in instrument_tool:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
             result["error_flag"] = True
+        else:
+            try:
+                val_ls = pack_registers(data, dtype)
+                instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
+            except Exception as e:
+                for i in range(len(data)):
+                    Logger.error("val{}: {}".format(i,data[i]))
+                Logger.error("Error in modbus write method", exc_info=True)
+                result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+                result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -440,17 +592,22 @@ def tool_modbus_read_inputs(slave_address, register_address, dtype):
         result = {"value": 0, "error": "", "error_flag": False}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
-        value = unpack_registers(val_ls, num_of_registers_tool, dtype)
-        if num_of_values == 1:
-            result["value"] = value[0]
-        else:
-            result["value"] = value
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = [dtypes + str(16*num_of_registers_tool) for dtypes in dtype]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = value[0]
+            else:
+                result["value"] = value
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -468,17 +625,22 @@ def tool_modbus_read_holdings(slave_address, register_address, dtype):
         result = {"value": 0, "error": "", "error_flag": False}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
-        value = unpack_registers(val_ls, num_of_registers_tool, dtype)
-        if num_of_values == 1:
-            result["value"] = value[0]
-        else:
-            result["value"] = value
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = [dtypes + str(16*num_of_registers_tool) for dtypes in dtype]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = value[0]
+            else:
+                result["value"] = value
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -490,15 +652,20 @@ def tool_modbus_read_holdings(slave_address, register_address, dtype):
 def tool_modbus_write_holding_int(slave_address, register_address, data):
     '''Function to write INT16/INT32/INT64 to slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
     result = {"value": data, "error": "", "error_flag": False}
-    try:
-        data = int(data)
-        val_ls = pack_registers([data], num_of_registers_tool, int)
-        instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
-    except Exception as e:
-        Logger.error("data: %s", data)
-        Logger.error("Error in modbus write method", exc_info=True)
-        result["error"] =  repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            data = int(data)
+            dtype = "int" + str(16*num_of_registers_tool)
+            val_ls = pack_registers([data], [dtype])
+            instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
+        except Exception as e:
+            Logger.error("data: %s", data)
+            Logger.error("Error in modbus write method", exc_info=True)
+            result["error"] =  repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -511,6 +678,9 @@ def tool_modbus_write_holding_float(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": False}
     if num_of_registers_tool <2:
         result["error"] =  "16-bit does not support float types"
+        result["error_flag"] = True
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
     else:
         try:
@@ -530,14 +700,19 @@ def tool_modbus_write_holding_float(slave_address, register_address, data):
 def tool_modbus_read_input_int(slave_address, register_address):
     '''Function to read INT16/INT32/INT64 from slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
     result = {"value": 0, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_registers_tool, functioncode=4)
-        value = unpack_registers(val_ls, num_of_registers_tool, int)
-        result["value"] = int(value[0])
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] =  repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = "int" + str(16*num_of_registers_tool)
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_registers_tool, functioncode=4)
+            value = unpack_registers(val_ls, [dtype])
+            result["value"] = int(value[0])
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] =  repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -551,12 +726,16 @@ def tool_modbus_read_input_float(slave_address, register_address):
     if num_of_registers_tool <2:
         result["error"] =  "16-bit does not support float types"
         result["error_flag"] = True
-    try:
-        result["value"] = instrument_tool[slave_address].read_float(register_address*num_of_registers_tool, number_of_registers=num_of_registers_tool, functioncode=4)
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] =  repr(e)
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            result["value"] = instrument_tool[slave_address].read_float(register_address*num_of_registers_tool, number_of_registers=num_of_registers_tool, functioncode=4)
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] =  repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -567,14 +746,19 @@ def tool_modbus_read_input_float(slave_address, register_address):
 def tool_modbus_read_holding_int(slave_address, register_address):
     '''Function to read back INT16/INT32/INT64 from master using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
     result = {"value": 0, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_registers_tool, functioncode=3)
-        value = unpack_registers(val_ls, num_of_registers_tool, int)
-        result["value"] = int(value[0])
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] =  repr(e)
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = "int" + str(16*num_of_registers_tool)
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_registers_tool, functioncode=3)
+            value = unpack_registers(val_ls, [dtype])
+            result["value"] = int(value[0])
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] =  repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -588,12 +772,16 @@ def tool_modbus_read_holding_float(slave_address, register_address):
     if num_of_registers_tool <2:
         result["error"] =  "16-bit does not support float types"
         result["error_flag"] = True
-    try:
-        result["value"] = instrument_tool[slave_address].read_float(register_address*num_of_registers_tool, number_of_registers=num_of_registers_tool, functioncode=3)
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] =  repr(e)
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            result["value"] = instrument_tool[slave_address].read_float(register_address*num_of_registers_tool, number_of_registers=num_of_registers_tool, functioncode=3)
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] =  repr(e)
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -606,16 +794,21 @@ def tool_modbus_write_holdings_int(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": False}
     if not isinstance(data, list):
         data = [data]
-    try:
-        data = list(map(int,data))
-        val_ls = pack_registers(data, num_of_registers_tool, int)
-        instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
-    except Exception as e:
-        for i in range(len(data)):
-            Logger.error("val{}: {}".format(i,data[i]))
-        Logger.error("Error in modbus write method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            data = list(map(int,data))
+            dtype = ["int" + str(16*num_of_registers_tool) for i in range(len(data))]
+            val_ls = pack_registers(data, dtype)
+            instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
+        except Exception as e:
+            for i in range(len(data)):
+                Logger.error("val{}: {}".format(i,data[i]))
+            Logger.error("Error in modbus write method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -628,16 +821,24 @@ def tool_modbus_write_holdings_float(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": False}
     if not isinstance(data, list):
         data = [data]
-    try:
-        data = list(map(float,data))
-        val_ls = pack_registers(data, num_of_registers_tool, float)
-        instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
-    except Exception as e:
-        for i in range(len(data)):
-            Logger.error("val{}: {}".format(i,data[i]))
-        Logger.error("Error in modbus write method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if num_of_registers_tool <2:
+        result["error"] =  "16-bit does not support float types"
         result["error_flag"] = True
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+        result["error_flag"] = True
+    else:
+        try:
+            data = list(map(float,data))
+            dtype = ["float" + str(16*num_of_registers_tool) for i in range(len(data))]
+            val_ls = pack_registers(data, dtype)
+            instrument_tool[slave_address].write_registers(register_address*num_of_registers_tool, val_ls)
+        except Exception as e:
+            for i in range(len(data)):
+                Logger.error("val{}: {}".format(i,data[i]))
+            Logger.error("Error in modbus write method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -651,17 +852,22 @@ def tool_modbus_read_inputs_int(slave_address, register_address, num_of_values):
         result = {"value": 0, "error": "", "error_flag": False}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
-        value = unpack_registers(val_ls, num_of_registers_tool, int)
-        if num_of_values == 1:
-            result["value"] = int(value[0])
-        else:
-            result["value"] = list(map(int,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = ["int" + str(16*num_of_registers_tool) for i in range(num_of_values)]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = int(value[0])
+            else:
+                result["value"] = list(map(int,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -675,17 +881,25 @@ def tool_modbus_read_inputs_float(slave_address, register_address, num_of_values
         result = {"value": 0.0, "error": "", "error_flag": False}
     else:
         result = {"value": [0.0]*num_of_values, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
-        value = unpack_registers(val_ls, num_of_registers_tool, float)
-        if num_of_values == 1:
-            result["value"] = float(value[0])
-        else:
-            result["value"] = list(map(float,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if num_of_registers_tool <2:
+        result["error"] =  "16-bit does not support float types"
         result["error_flag"] = True
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+        result["error_flag"] = True
+    else:
+        try:
+            dtype = ["float" + str(16*num_of_registers_tool) for i in range(num_of_values)]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=4)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = float(value[0])
+            else:
+                result["value"] = list(map(float,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -699,17 +913,22 @@ def tool_modbus_read_holdings_int(slave_address, register_address, num_of_values
         result = {"value": 0, "error": "", "error_flag": False}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": False}
-    try:
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
-        value = unpack_registers(val_ls, num_of_registers_tool, int)
-        if num_of_values == 1:
-            result["value"] = int(value[0])
-        else:
-            result["value"] = list(map(int,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
         result["error_flag"] = True
+    else:
+        try:
+            dtype = ["int" + str(16*num_of_registers_tool) for i in range(num_of_values)]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = int(value[0])
+            else:
+                result["value"] = list(map(int,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -723,17 +942,25 @@ def tool_modbus_read_holdings_float(slave_address, register_address, num_of_valu
         result = {"value": 0.0, "error": "", "error_flag": False}
     else:
         result = {"value": [0.0]*num_of_values, "error": "", "error_flag": False}
-    try:  
-        val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
-        value = unpack_registers(val_ls, num_of_registers_tool, float)
-        if num_of_values == 1:
-            result["value"] = float(value[0])
-        else:
-            result["value"] = list(map(float,value))
-    except Exception as e:
-        Logger.error("Error in modbus read method", exc_info=True)
-        result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+    if num_of_registers_tool <2:
+        result["error"] =  "16-bit does not support float types"
         result["error_flag"] = True
+    elif slave_address not in instrument_tool:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+        result["error_flag"] = True
+    else:
+        try:  
+            dtype = ["float" + str(16*num_of_registers_tool) for i in range(num_of_values)]
+            val_ls = instrument_tool[slave_address].read_registers(register_address*num_of_registers_tool, num_of_values*num_of_registers_tool, functioncode=3)
+            value = unpack_registers(val_ls, dtype)
+            if num_of_values == 1:
+                result["value"] = float(value[0])
+            else:
+                result["value"] = list(map(float,value))
+        except Exception as e:
+            Logger.error("Error in modbus read method", exc_info=True)
+            result["error"] = repr(e).replace('"',"'")      # replace all " with ' to prevent UR string errors
+            result["error_flag"] = True
     if error_handling_tool:
         return result
     elif result["error_flag"]:
@@ -946,16 +1173,19 @@ def usb_modbus_check_connection(slave_address, register_type, register_address):
 def usb_modbus_write_coil(slave_address, register_address, data):
     '''Function to write single BOOL to slave'''
     result = {"value": data, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            data = bool(data)
-            instrument.write_bit(register_address, data)
-            result = {"value": data, "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("data: %s", data)
-            Logger.error("Error in modbus write method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                data = bool(data)
+                instrument.write_bit(register_address, data)
+                result = {"value": data, "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("data: %s", data)
+                Logger.error("Error in modbus write method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -966,14 +1196,17 @@ def usb_modbus_write_coil(slave_address, register_address, data):
 def usb_modbus_read_discrete(slave_address, register_address):
     '''Function to read single BOOL from slave'''
     result = {"value": False, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            value = instrument.read_bit(register_address, functioncode=2)
-            result = {"value": bool(value), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                value = instrument.read_bit(register_address, functioncode=2)
+                result = {"value": bool(value), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -984,14 +1217,17 @@ def usb_modbus_read_discrete(slave_address, register_address):
 def usb_modbus_read_coil(slave_address, register_address):
     '''Function to read back BOOL from master'''
     result = {"value": False, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            value = instrument.read_bit(register_address, functioncode=1)
-            result = {"value": bool(value), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                value = instrument.read_bit(register_address, functioncode=1)
+                result = {"value": bool(value), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1004,17 +1240,20 @@ def usb_modbus_write_coils(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": True}
     if not isinstance(data, list):
         data = [data]
-    for instrument in instrument_usb[slave_address]:
-        try:
-            data = list(map(bool,data))
-            instrument.write_bits(register_address, data)
-            result = {"value": data, "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            for i in range(len(data)):
-                Logger.error("val{}:{}".format(i,data[i]))
-            Logger.error("Error in modbus write method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                data = list(map(bool,data))
+                instrument.write_bits(register_address, data)
+                result = {"value": data, "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                for i in range(len(data)):
+                    Logger.error("val{}:{}".format(i,data[i]))
+                Logger.error("Error in modbus write method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1025,17 +1264,20 @@ def usb_modbus_write_coils(slave_address, register_address, data):
 def usb_modbus_read_discretes(slave_address, register_address, num_of_registers):
     '''Function to read multiple BOOL from slave in list format or single BOOL as BOOL'''
     result = {"value": [False]*num_of_registers, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            value = instrument.read_bits(register_address, num_of_registers, functioncode=2)
-            if num_of_registers == 1:
-                result = {"value": bool(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(bool,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                value = instrument.read_bits(register_address, num_of_registers, functioncode=2)
+                if num_of_registers == 1:
+                    result = {"value": bool(value[0]), "error": "", "error_flag": False}
+                else:
+                    result = {"value": list(map(bool,value)), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1046,17 +1288,20 @@ def usb_modbus_read_discretes(slave_address, register_address, num_of_registers)
 def usb_modbus_read_coils(slave_address, register_address, num_of_registers):
     '''Function to read back multiple BOOL from master in list format or single BOOL as BOOL'''
     result = {"value": [False]*num_of_registers, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            value = instrument.read_bits(register_address, num_of_registers, functioncode=1)
-            if num_of_registers == 1:
-                result = {"value": bool(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(bool,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                value = instrument.read_bits(register_address, num_of_registers, functioncode=1)
+                if num_of_registers == 1:
+                    result = {"value": bool(value[0]), "error": "", "error_flag": False}
+                else:
+                    result = {"value": list(map(bool,value)), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1066,6 +1311,61 @@ def usb_modbus_read_coils(slave_address, register_address, num_of_registers):
 
 
 ''' Functions for 16/32/64 bit communication '''
+def usb_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype):
+    '''Function to write and read multiple types of data to slave. Underlying communication uses registers'''
+    if not isinstance(write_data, list):
+        write_data = [write_data]
+    if not isinstance(write_dtype, list):
+        write_dtype = [write_dtype]
+    if not isinstance(read_dtype, list):
+        read_dtype = [read_dtype]
+    read_num_of_values = len(read_dtype)
+    if read_num_of_values == 1:
+        result = {"value": 0, "error": "", "error_flag": True}
+    else:
+        result = {"value": [0]*read_num_of_values, "error": "", "error_flag": True}
+
+    try:
+        for i in range(len(write_data)):
+            if write_dtype[i] in ["int", "uint"]:
+                write_data[i] = int(write_data[i])
+            elif write_dtype[i] in ["float"]:
+                write_data[i] = float(write_data[i])
+        write_dtype = [dtype + str(16*num_of_registers_usb) for dtype in write_dtype]
+        read_dtype = [dtype + str(16*num_of_registers_usb) for dtype in read_dtype]
+    except Exception as e:
+        result["error"] = repr(e).replace('"',"'")
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    write_ls = pack_registers(write_data, write_dtype)
+                    read_ls = instrument.read_write_registers(
+                        read_register_address*num_of_registers_usb,
+                        read_num_of_values*num_of_registers_usb,
+                        write_register_address*num_of_registers_usb,
+                        write_ls)
+                    value = unpack_registers(read_ls, read_dtype)
+                    if read_num_of_values == 1:
+                        result = {"value": value[0], "error": "", "error_flag": False}
+                    else:
+                        result = {"value": value, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    for i in range(len(write_data)):
+                        Logger.error("val{}: {}".format(i,write_data[i]))
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    if error_handling_tool:
+        return result
+    elif result["error_flag"]:
+        return result["error"]
+    else:
+        return result["value"]
+
+
 def usb_modbus_write_holdings(slave_address, register_address, data, dtype):
     '''Function to write multiple INT16/INT32/INT64/FLOAT32/FLOAT64 to slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.
     length of data should be equal to length of dtype'''
@@ -1080,20 +1380,24 @@ def usb_modbus_write_holdings(slave_address, register_address, data, dtype):
                 data[i] = int(data[i])
             elif dtype[i] in ["float", float]:
                 data[i] = float(data[i])
+        dtype = [dtypes + str(16*num_of_registers_usb) for dtypes in dtype]
     except Exception as e:
         result["error"] = repr(e).replace('"',"'")
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val_ls = pack_registers(data, num_of_registers_usb, dtype)
-                instrument.write_registers(register_address*num_of_registers_usb, val_ls)
-                result = {"value": data, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                for i in range(len(data)):
-                    Logger.error("val{}: {}".format(i,data[i]))
-                Logger.error("Error in modbus write method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = pack_registers(data, dtype)
+                    instrument.write_registers(register_address*num_of_registers_usb, val_ls)
+                    result = {"value": data, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    for i in range(len(data)):
+                        Logger.error("val{}: {}".format(i,data[i]))
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1111,18 +1415,26 @@ def usb_modbus_read_inputs(slave_address, register_address, dtype):
         result = {"value": 0, "error": "", "error_flag": True}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
-            value = unpack_registers(val_ls, num_of_registers_usb, dtype)
-            if num_of_values == 1:
-                result = {"value": value[0], "error": "", "error_flag": False}
-            else:
-                result = {"value": value, "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = [dtypes + str(16*num_of_registers_usb) for dtypes in dtype]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": value[0], "error": "", "error_flag": False}
+                    else:
+                        result = {"value": value, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1140,18 +1452,26 @@ def usb_modbus_read_holdings(slave_address, register_address, dtype):
         result = {"value": 0, "error": "", "error_flag": True}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
-            value = unpack_registers(val_ls, num_of_registers_usb, dtype)
-            if num_of_values == 1:
-                result = {"value": value[0], "error": "", "error_flag": False}
-            else:
-                result = {"value": value, "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = [dtypes + str(16*num_of_registers_usb) for dtypes in dtype]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": value[0], "error": "", "error_flag": False}
+                    else:
+                        result = {"value": value, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1165,19 +1485,23 @@ def usb_modbus_write_holding_int(slave_address, register_address, data):
     result = {"value": data, "error": "", "error_flag": True}
     try:
         data = int(data)
+        dtype = "int" + str(16*num_of_registers_usb)
     except Exception as e:
         result["error"] = repr(e)
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val_ls = pack_registers([data], num_of_registers_usb, int)
-                instrument.write_registers(register_address*num_of_registers_usb, val_ls)
-                result = {"value": data, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                Logger.error("data: %s", data)
-                Logger.error("Error in modbus write method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = pack_registers([data], [dtype])
+                    instrument.write_registers(register_address*num_of_registers_usb, val_ls)
+                    result = {"value": data, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("data: %s", data)
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1191,15 +1515,18 @@ def usb_modbus_write_holding_float(slave_address, register_address, data):
     if num_of_registers_usb <2:
         result["error"] =  "16-bit does not support float types"
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                instrument.write_float(register_address*num_of_registers_usb, data, number_of_registers=num_of_registers_usb)
-                result = {"value": data, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                Logger.error("data: %s", data)
-                Logger.error("Error in modbus write method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    instrument.write_float(register_address*num_of_registers_usb, data, number_of_registers=num_of_registers_usb)
+                    result = {"value": data, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("data: %s", data)
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1210,15 +1537,19 @@ def usb_modbus_write_holding_float(slave_address, register_address, data):
 def usb_modbus_read_input_int(slave_address, register_address):
     '''Function to read INT16/INT32/INT64 from slave using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
     result = {"value": 0, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_registers_usb, functioncode=4)
-            value = unpack_registers(val_ls, num_of_registers_usb, int)
-            result = {"value": int(value[0]), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+    dtype = "int" + str(16*num_of_registers_usb)
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_registers_usb, functioncode=4)
+                value = unpack_registers(val_ls, [dtype])
+                result = {"value": int(value[0]), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1232,14 +1563,17 @@ def usb_modbus_read_input_float(slave_address, register_address):
     if num_of_registers_usb <2:
         result["error"] =  "16-bit does not support float types"
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val = instrument.read_float(register_address*num_of_registers_usb, number_of_registers=num_of_registers_usb, functioncode=4)
-                result = {"value": val, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                Logger.error("Error in modbus read method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val = instrument.read_float(register_address*num_of_registers_usb, number_of_registers=num_of_registers_usb, functioncode=4)
+                    result = {"value": val, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1250,15 +1584,19 @@ def usb_modbus_read_input_float(slave_address, register_address):
 def usb_modbus_read_holding_int(slave_address, register_address):
     '''Function to read back INT16/INT32/INT64 from master using 1/2/4 registers. Maps register_address to multiples of 1/2/4 to ensure no overlap.'''
     result = {"value": 0, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_registers_usb, functioncode=4)
-            value = unpack_registers(val_ls, num_of_registers_usb, int)
-            result = {"value": int(value[0]), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+    dtype = "int" + str(16*num_of_registers_usb)
+    if slave_address not in instrument_usb:
+        result["error"] = "Slave {} does not exist.".format(slave_address)
+    else:
+        for instrument in instrument_usb[slave_address]:
+            try:
+                val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_registers_usb, functioncode=4)
+                value = unpack_registers(val_ls, [dtype])
+                result = {"value": int(value[0]), "error": "", "error_flag": False}
+                break
+            except Exception as e:
+                Logger.error("Error in modbus read method", exc_info=True)
+                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1272,14 +1610,17 @@ def usb_modbus_read_holding_float(slave_address, register_address):
     if num_of_registers_usb <2:
         result["error"] =  "16-bit does not support float types"
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val = instrument.read_float(register_address*num_of_registers_usb, number_of_registers=num_of_registers_usb, functioncode=3)
-                result = {"value": val, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                Logger.error("Error in modbus read method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val = instrument.read_float(register_address*num_of_registers_usb, number_of_registers=num_of_registers_usb, functioncode=3)
+                    result = {"value": val, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e) + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1294,20 +1635,24 @@ def usb_modbus_write_holdings_int(slave_address, register_address, data):
         data = [data]
     try:
         data = list(map(int,data))
+        dtype = ["int" + str(16*num_of_registers_usb) for i in range(len(data))]
     except Exception as e:
         result["error"] = repr(e)
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val_ls = pack_registers(data, num_of_registers_usb, int)
-                instrument.write_registers(register_address*num_of_registers_usb, val_ls)
-                result = {"value": data, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                for i in range(len(data)):
-                    Logger.error("val{}: {}".format(i,data[i]))
-                Logger.error("Error in modbus write method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = pack_registers(data, dtype)
+                    instrument.write_registers(register_address*num_of_registers_usb, val_ls)
+                    result = {"value": data, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    for i in range(len(data)):
+                        Logger.error("val{}: {}".format(i,data[i]))
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1322,20 +1667,24 @@ def usb_modbus_write_holdings_float(slave_address, register_address, data):
         data = [data]
     try:
         data = list(map(float,data))
+        dtype = ["float" + str(16*num_of_registers_usb) for i in range(len(data))]
     except Exception as e:
         result["error"] = repr(e)
     else:
-        for instrument in instrument_usb[slave_address]:
-            try:
-                val_ls = pack_registers(data, num_of_registers_usb, float)
-                instrument.write_registers(register_address*num_of_registers_usb, val_ls)
-                result = {"value": data, "error": "", "error_flag": False}
-                break
-            except Exception as e:
-                for i in range(len(data)):
-                    Logger.error("val{}: {}".format(i,data[i]))
-                Logger.error("Error in modbus write method", exc_info=True)
-                result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = pack_registers(data, dtype)
+                    instrument.write_registers(register_address*num_of_registers_usb, val_ls)
+                    result = {"value": data, "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    for i in range(len(data)):
+                        Logger.error("val{}: {}".format(i,data[i]))
+                    Logger.error("Error in modbus write method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1349,18 +1698,26 @@ def usb_modbus_read_inputs_int(slave_address, register_address, num_of_values):
         result = {"value": 0, "error": "", "error_flag": True}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
-            value = unpack_registers(val_ls, num_of_registers_usb, int)
-            if num_of_values == 1:
-                result = {"value": int(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(int,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = ["int" + str(16*num_of_registers_usb) for i in range(num_of_values)]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": int(value[0]), "error": "", "error_flag": False}
+                    else:
+                        result = {"value": list(map(int,value)), "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1374,18 +1731,26 @@ def usb_modbus_read_inputs_float(slave_address, register_address, num_of_values)
         result = {"value": 0.0, "error": "", "error_flag": True}
     else:
         result = {"value": [0.0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
-            value = unpack_registers(val_ls, num_of_registers_usb, float)
-            if num_of_values == 1:
-                result = {"value": float(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(float,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = ["float" + str(16*num_of_registers_usb) for i in range(num_of_values)]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=4)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": float(value[0]), "error": "", "error_flag": False}
+                    else:
+                        result = {"value": list(map(float,value)), "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1399,18 +1764,26 @@ def usb_modbus_read_holdings_int(slave_address, register_address, num_of_values)
         result = {"value": 0, "error": "", "error_flag": True}
     else:
         result = {"value": [0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
-            value = unpack_registers(val_ls, num_of_registers_usb, int)
-            if num_of_values == 1:
-                result = {"value": int(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(int,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = ["int" + str(16*num_of_registers_usb) for i in range(num_of_values)]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": int(value[0]), "error": "", "error_flag": False}
+                    else:
+                        result = {"value": list(map(int,value)), "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1424,18 +1797,26 @@ def usb_modbus_read_holdings_float(slave_address, register_address, num_of_value
         result = {"value": 0.0, "error": "", "error_flag": True}
     else:
         result = {"value": [0.0]*num_of_values, "error": "", "error_flag": True}
-    for instrument in instrument_usb[slave_address]:
-        try:
-            val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
-            value = unpack_registers(val_ls, num_of_registers_usb, float)
-            if num_of_values == 1:
-                result = {"value": float(value[0]), "error": "", "error_flag": False}
-            else:
-                result = {"value": list(map(float,value)), "error": "", "error_flag": False}
-            break
-        except Exception as e:
-            Logger.error("Error in modbus read method", exc_info=True)
-            result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
+    try:
+        dtype = ["float" + str(16*num_of_registers_usb) for i in range(num_of_values)]
+    except Exception as e:
+        result["error"] = repr(e)
+    else:
+        if slave_address not in instrument_usb:
+            result["error"] = "Slave {} does not exist.".format(slave_address)
+        else:
+            for instrument in instrument_usb[slave_address]:
+                try:
+                    val_ls = instrument.read_registers(register_address*num_of_registers_usb, num_of_values*num_of_registers_usb, functioncode=3)
+                    value = unpack_registers(val_ls, dtype)
+                    if num_of_values == 1:
+                        result = {"value": float(value[0]), "error": "", "error_flag": False}
+                    else:
+                        result = {"value": list(map(float,value)), "error": "", "error_flag": False}
+                    break
+                except Exception as e:
+                    Logger.error("Error in modbus read method", exc_info=True)
+                    result["error"] = result["error"] + "{}: ".format(instrument.serial.port) + repr(e).replace('"',"'") + ", "
     if error_handling_usb:
         return result
     elif result["error_flag"]:
@@ -1475,6 +1856,8 @@ server.register_function(tool_modbus_read_coil,"tool_modbus_read_coil")
 server.register_function(tool_modbus_write_coils,"tool_modbus_write_coils")
 server.register_function(tool_modbus_read_discretes,"tool_modbus_read_discretes")
 server.register_function(tool_modbus_read_coils,"tool_modbus_read_coils")
+
+server.register_function(tool_modbus_read_write_registers,"tool_modbus_read_write_registers")
 
 server.register_function(tool_modbus_write_holdings,"tool_modbus_write_holdings")
 server.register_function(tool_modbus_read_inputs,"tool_modbus_read_inputs")
@@ -1516,6 +1899,8 @@ server.register_function(usb_modbus_read_coil,"usb_modbus_read_coil")
 server.register_function(usb_modbus_write_coils,"usb_modbus_write_coils")
 server.register_function(usb_modbus_read_discretes,"usb_modbus_read_discretes")
 server.register_function(usb_modbus_read_coils,"usb_modbus_read_coils")
+
+server.register_function(usb_modbus_read_write_registers,"usb_modbus_read_write_registers")
 
 server.register_function(usb_modbus_write_holdings,"usb_modbus_write_holdings")
 server.register_function(usb_modbus_read_inputs,"usb_modbus_read_inputs")

@@ -207,6 +207,12 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
+		//Modbus init method: ex --> tool_modbus_read_write_registers(1, 0, ["int", "float"], 0, [-1, 1, 1.1], ["int", "uint", "float"])
+		writer.appendLine("def tool_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype):");
+		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
 		//Modbus init method: ex --> tool_modbus_write_holdings(1, 0, [-1, 1, 1.1], ["int", "uint", "float"])
 		writer.appendLine("def tool_modbus_write_holdings(slave_address, register_address, data, dtype):");
 		writer.appendLine("local response = modbus_xmlrpc.tool_modbus_write_holdings(slave_address, register_address, data, dtype)");
@@ -402,6 +408,12 @@ public class DaemonInstallationNodeContribution implements InstallationNodeContr
 		//Modbus init method: ex --> usb_modbus_read_coils(1, 0, 1)
 		writer.appendLine("def usb_modbus_read_coils(slave_address, register_address, num_of_registers):");
 		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_coils(slave_address, register_address, num_of_registers)");
+		writer.appendLine("return response");
+		writer.appendLine("end");
+	
+		//Modbus init method: ex --> usb_modbus_read_write_registers(1, 0, ["int", "float"], 0, [-1, 1, 1.1], ["int", "uint", "float"])
+		writer.appendLine("def usb_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype):");
+		writer.appendLine("local response = modbus_xmlrpc.usb_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype)");
 		writer.appendLine("return response");
 		writer.appendLine("end");
 	
