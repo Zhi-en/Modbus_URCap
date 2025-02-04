@@ -5,9 +5,9 @@ The URCap runs on port: 40408 on a daemon. Following script functions is added b
 
 For connecting to devices via tool connector:
  
-*	**init_tool_modbus_64bit()**
-*	**init_tool_modbus_32bit()**
-*	**init_tool_modbus_16bit()**
+*	**init_tool_modbus_64bit(slave_address)** where slave_address is an int
+*	**init_tool_modbus_32bit(slave_address)** where slave_address is an int
+*	**init_tool_modbus_16bit(slave_address)** where slave_address is an int
 
 For sending and receiving data via tool connector:
 
@@ -32,6 +32,7 @@ For sending and receiving data via tool connector:
 *	**tool_modbus_write_holdings(slave_address, register_address, data, dtypes)** where slave_address is an int, register_address is an int, data is a list of int/floats and dtype is a list of "int" or "float".
 *	**tool_modbus_read_inputs(slave_address, register_address, dtypes)** where slave_address is an int, register_address is an int and dtypes is a list of "int" or "float" whose length corresponds to the number of registers to read.
 *	**tool_modbus_read_holdings(slave_address, register_address, dtypes)** where slave_address is an int, register_address is an int and dtypes is a list of "int" or "float" whose length corresponds to the number of registers to read.
+*	**tool_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype)** where slave_address is an int, read_register_address is an int, read_dtype is a list of "int" or "float" whose length corresponds to the number of registers to read, write_register_address is an int, write_data is a list of int/floats and write_dtype is a list of "int" or "float".
 
 The RS485 settings can be modified with the functions:
 
@@ -43,9 +44,9 @@ The RS485 settings can be modified with the functions:
 
 For connecting to devices via USB:
  
-*	**init_usb_modbus_64bit(usb_devname_contains, usb_IDserial_contains)** where usb_devname_contains is a string and usb_IDserial_contains is a string.
-*	**init_usb_modbus_32bit(usb_devname_contains, usb_IDserial_contains)** where usb_devname_contains is a string and usb_IDserial_contains is a string.
-*	**init_usb_modbus_16bit(usb_devname_contains, usb_IDserial_contains)** where usb_devname_contains is a string and usb_IDserial_contains is a string.
+*	**init_usb_modbus_64bit(slave_address, usb_devname_contains, usb_IDserial_contains)** where slave_address is an int, where usb_devname_contains is a string and usb_IDserial_contains is a string.
+*	**init_usb_modbus_32bit(slave_address, usb_devname_contains, usb_IDserial_contains)** where slave_address is an int, where usb_devname_contains is a string and usb_IDserial_contains is a string.
+*	**init_usb_modbus_16bit(slave_address, usb_devname_contains, usb_IDserial_contains)** where slave_address is an int, where usb_devname_contains is a string and usb_IDserial_contains is a string.
 
 For sending and receiving data via US, refer to the functions for tool connector, all function names replace tool with usb
 
@@ -70,10 +71,11 @@ For sending and receiving data via US, refer to the functions for tool connector
 *	**usb_modbus_write_holdings(slave_address, register_address, data, dtypes)**
 *	**usb_modbus_read_inputs(slave_address, register_address, dtypes)**
 *	**usb_modbus_read_holdings(slave_address, register_address, dtypes)**
+*	**usb_modbus_read_write_registers(slave_address, read_register_address, read_dtype, write_register_address, write_data, write_dtype)**
 
 The USB Serial settings can be modified with the functions:
 
-*	**usb_modbus_set_baudrate(baudrate)** where baudrate values are 9600, 19200, 38400, 57600, 115200, 1000000, 2000000, 5000000
+*	**usb_modbus_set_baudrate(baudrate)** where the optimal baudrate is 115200 (default)
 *	**usb_modbus_set_bytesize(bytesize)** where bytesize values are 5, 6, 7, 8
 *	**usb_modbus_set_parity(parity)** where parity values are "None", "Even", "Odd"
 *	**usb_modbus_set_stopbit(stop)** where stop values are 1, 1.5, 2
@@ -83,7 +85,7 @@ The USB Serial settings can be modified with the functions:
 
 For tool connector:
 
-    init_tool_modbus_64bit()
+    init_tool_modbus_64bit(1)
 
     tool_modbus_write_coil(1, 0, True)
     bool1 = tool_modbus_read_discrete(1, 0).value
@@ -94,7 +96,7 @@ For tool connector:
 
 For USB:
 
-    init_usb_modbus_64bit("ttyACM", "Arduino")
+    init_usb_modbus_64bit(1, "ttyACM", "Arduino")
 
     usb_modbus_write_coil(1, 0, True)
     bool1 = usb_modbus_read_discrete(1, 0).value
@@ -122,3 +124,4 @@ Do note that all the tool devices must share the same RS485 settings (baurate, b
 2024-12-24  Zhi-en      v2.0    Added modbus over USB functionality
 2024-12-27  Zhi-en      v2.1    Shift slave address from init to individual functions to allow communication with multiple slaves over the same cable
 2025-01-16  Zhi-en      v2.2    Enable reading and writing of multiple coils, discretes, holdings and inputs.
+2025-02-03  Zhi-en      v2.3    New function code 23 for write followed by read of slave registers in 1 command

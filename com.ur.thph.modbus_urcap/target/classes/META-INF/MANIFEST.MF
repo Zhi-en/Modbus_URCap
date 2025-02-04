@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1737083170565
+Bnd-LastModified: 1738649028984
 Build-Jdk: 1.8.0_292
 Built-By: ur
 Bundle-Activator: com.ur.thph.modbus_urcap.impl.Activator
@@ -15,7 +15,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: modbus_BnT
 Bundle-SymbolicName: com.ur.thph.modbus_BnT
 Bundle-Vendor: Wilfrid Lan and Zhi-en Tan
-Bundle-Version: 2.2.0
+Bundle-Version: 2.3.0
 Created-By: Apache Maven Bundle Plugin
 Import-Package: com.ur.urcap.api.contribution;version="[1.7,2)",com.ur.u
  rcap.api.contribution.installation;version="[1.7,2)",com.ur.urcap.api.c
